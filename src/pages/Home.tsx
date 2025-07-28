@@ -5,11 +5,12 @@ import { useWorkoutData } from "@/hooks/useWgerApi";
 
 interface HomeProps {
   onStartWorkout: () => void;
+  userData?: any;
 }
 
-const Home = ({ onStartWorkout }: HomeProps) => {
-  const { getCurrentWorkout } = useWorkoutData();
-  const [userName] = useState("João"); // In a real app, this would come from user auth
+const Home = ({ onStartWorkout, userData }: HomeProps) => {
+  const { getCurrentWorkout } = useWorkoutData(userData);
+  const [userName] = useState(userData?.name || "João");
   
   const currentWorkout = getCurrentWorkout();
   const today = new Date().toLocaleDateString('pt-BR', {

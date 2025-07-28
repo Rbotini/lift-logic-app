@@ -95,49 +95,215 @@ export const useWgerExercises = () => {
   };
 };
 
-export const useWorkoutData = () => {
-  // Mock workout data for now - can be replaced with real API/database
-  const [workouts] = useState([
-    {
-      id: 1,
-      title: "Treino de Peito e Tríceps",
-      exercises: [
-        { name: "Supino Reto", sets: 3, reps: 12, exerciseId: 88 },
-        { name: "Supino Inclinado", sets: 3, reps: 10, exerciseId: 89 },
-        { name: "Crucifixo", sets: 3, reps: 15, exerciseId: 90 },
-        { name: "Tríceps Pulley", sets: 3, reps: 12, exerciseId: 91 },
-        { name: "Tríceps Francês", sets: 3, reps: 10, exerciseId: 92 },
-      ],
-      difficulty: "Intermediário" as const,
-      duration: "45-60 min"
-    },
-    {
-      id: 2,
-      title: "Treino de Costas e Bíceps", 
-      exercises: [
-        { name: "Puxada Frontal", sets: 3, reps: 12, exerciseId: 93 },
-        { name: "Remada Baixa", sets: 3, reps: 10, exerciseId: 94 },
-        { name: "Pullover", sets: 3, reps: 15, exerciseId: 95 },
-        { name: "Rosca Direta", sets: 3, reps: 12, exerciseId: 96 },
-        { name: "Rosca Martelo", sets: 3, reps: 10, exerciseId: 97 },
-      ],
-      difficulty: "Intermediário" as const,
-      duration: "45-60 min"
-    }
-  ]);
+interface UserProfile {
+  name: string;
+  age: string;
+  height: string;
+  weight: string;
+  goal: string;
+  level: string;
+  muscleGroups: string[];
+}
 
+export const useWorkoutData = (userProfile?: UserProfile) => {
   const [currentWorkoutIndex, setCurrentWorkoutIndex] = useState(0);
   
-  const getCurrentWorkout = () => workouts[currentWorkoutIndex];
+  // Workout templates by level and focus
+  const workoutTemplates = {
+    beginner: {
+      exerciseCount: 4,
+      duration: "30-40 min",
+      workouts: [
+        {
+          title: "Treino A - Superior",
+          exercises: [
+            { name: "Supino com Halteres", sets: 2, reps: 12, exerciseId: 75, rest: "60s" },
+            { name: "Remada com Halteres", sets: 2, reps: 12, exerciseId: 84, rest: "60s" },
+            { name: "Desenvolvimento com Halteres", sets: 2, reps: 10, exerciseId: 76, rest: "60s" },
+            { name: "Rosca Direta", sets: 2, reps: 12, exerciseId: 92, rest: "45s" }
+          ]
+        },
+        {
+          title: "Treino B - Inferior + Core",
+          exercises: [
+            { name: "Agachamento Livre", sets: 2, reps: 15, exerciseId: 111, rest: "90s" },
+            { name: "Leg Press", sets: 2, reps: 12, exerciseId: 345, rest: "60s" },
+            { name: "Panturrilha em Pé", sets: 2, reps: 15, exerciseId: 576, rest: "45s" },
+            { name: "Abdominal Crunch", sets: 2, reps: 15, exerciseId: 167, rest: "30s" }
+          ]
+        }
+      ]
+    },
+    intermediate: {
+      exerciseCount: 5,
+      duration: "45-60 min",
+      workouts: [
+        {
+          title: "Treino A - Peito e Tríceps",
+          exercises: [
+            { name: "Supino Reto", sets: 3, reps: 12, exerciseId: 73, rest: "60s" },
+            { name: "Supino Inclinado", sets: 3, reps: 10, exerciseId: 537, rest: "60s" },
+            { name: "Crucifixo", sets: 3, reps: 12, exerciseId: 135, rest: "45s" },
+            { name: "Tríceps Pulley", sets: 3, reps: 12, exerciseId: 539, rest: "45s" },
+            { name: "Tríceps Francês", sets: 3, reps: 10, exerciseId: 246, rest: "45s" }
+          ]
+        },
+        {
+          title: "Treino B - Costas e Bíceps",
+          exercises: [
+            { name: "Puxada Frontal", sets: 3, reps: 12, exerciseId: 154, rest: "60s" },
+            { name: "Remada Baixa", sets: 3, reps: 10, exerciseId: 84, rest: "60s" },
+            { name: "Pullover", sets: 3, reps: 12, exerciseId: 185, rest: "45s" },
+            { name: "Rosca Direta", sets: 3, reps: 12, exerciseId: 92, rest: "45s" },
+            { name: "Rosca Martelo", sets: 3, reps: 10, exerciseId: 272, rest: "45s" }
+          ]
+        },
+        {
+          title: "Treino C - Pernas e Glúteos",
+          exercises: [
+            { name: "Agachamento", sets: 4, reps: 12, exerciseId: 111, rest: "90s" },
+            { name: "Leg Press", sets: 3, reps: 15, exerciseId: 345, rest: "60s" },
+            { name: "Cadeira Extensora", sets: 3, reps: 12, exerciseId: 127, rest: "45s" },
+            { name: "Mesa Flexora", sets: 3, reps: 12, exerciseId: 132, rest: "45s" },
+            { name: "Panturrilha", sets: 3, reps: 15, exerciseId: 576, rest: "45s" }
+          ]
+        },
+        {
+          title: "Treino D - Ombros e Core",
+          exercises: [
+            { name: "Desenvolvimento", sets: 3, reps: 10, exerciseId: 76, rest: "60s" },
+            { name: "Elevação Lateral", sets: 3, reps: 12, exerciseId: 128, rest: "45s" },
+            { name: "Elevação Frontal", sets: 3, reps: 12, exerciseId: 129, rest: "45s" },
+            { name: "Encolhimento", sets: 3, reps: 12, exerciseId: 571, rest: "45s" },
+            { name: "Prancha", sets: 3, reps: 30, exerciseId: 167, rest: "60s" }
+          ]
+        }
+      ]
+    },
+    advanced: {
+      exerciseCount: 7,
+      duration: "60-75 min",
+      workouts: [
+        {
+          title: "Treino A - Peito e Tríceps (Hipertrofia)",
+          exercises: [
+            { name: "Supino Reto", sets: 4, reps: 8, exerciseId: 73, rest: "90s" },
+            { name: "Supino Inclinado", sets: 4, reps: 10, exerciseId: 537, rest: "90s" },
+            { name: "Supino Declinado", sets: 3, reps: 12, exerciseId: 427, rest: "60s" },
+            { name: "Crucifixo", sets: 3, reps: 12, exerciseId: 135, rest: "60s" },
+            { name: "Paralelas", sets: 3, reps: 10, exerciseId: 197, rest: "60s" },
+            { name: "Tríceps Testa", sets: 4, reps: 10, exerciseId: 246, rest: "60s" },
+            { name: "Tríceps Corda", sets: 3, reps: 12, exerciseId: 275, rest: "45s" }
+          ]
+        },
+        {
+          title: "Treino B - Costas e Bíceps (Volume)",
+          exercises: [
+            { name: "Barra Fixa", sets: 4, reps: 8, exerciseId: 154, rest: "90s" },
+            { name: "Remada Curvada", sets: 4, reps: 8, exerciseId: 84, rest: "90s" },
+            { name: "Puxada Triangular", sets: 3, reps: 10, exerciseId: 513, rest: "60s" },
+            { name: "Remada Unilateral", sets: 3, reps: 12, exerciseId: 525, rest: "60s" },
+            { name: "Pullover", sets: 3, reps: 12, exerciseId: 185, rest: "60s" },
+            { name: "Rosca Direta", sets: 4, reps: 10, exerciseId: 92, rest: "60s" },
+            { name: "Rosca Martelo", sets: 3, reps: 12, exerciseId: 272, rest: "45s" }
+          ]
+        },
+        {
+          title: "Treino C - Quadríceps e Glúteos",
+          exercises: [
+            { name: "Agachamento Livre", sets: 5, reps: 8, exerciseId: 111, rest: "120s" },
+            { name: "Leg Press 45°", sets: 4, reps: 12, exerciseId: 345, rest: "90s" },
+            { name: "Cadeira Extensora", sets: 4, reps: 15, exerciseId: 127, rest: "60s" },
+            { name: "Hack Squat", sets: 3, reps: 12, exerciseId: 123, rest: "90s" },
+            { name: "Afundo", sets: 3, reps: 10, exerciseId: 456, rest: "60s" },
+            { name: "Cadeira Adutora", sets: 3, reps: 15, exerciseId: 789, rest: "45s" },
+            { name: "Panturrilha em Pé", sets: 4, reps: 20, exerciseId: 576, rest: "45s" }
+          ]
+        }
+      ]
+    }
+  };
+
+  // Generate workouts based on user profile
+  const generateWorkouts = () => {
+    if (!userProfile) {
+      // Default intermediate workouts
+      return workoutTemplates.intermediate.workouts;
+    }
+
+    const level = userProfile.level as keyof typeof workoutTemplates;
+    const template = workoutTemplates[level] || workoutTemplates.intermediate;
+    
+    // Adjust workouts based on goals and preferences
+    let workouts = [...template.workouts];
+    
+    // Adjust for weight loss goal
+    if (userProfile.goal === "weight-loss") {
+      workouts = workouts.map(workout => ({
+        ...workout,
+        exercises: workout.exercises.map(ex => ({
+          ...ex,
+          sets: Math.max(ex.sets - 1, 2),
+          reps: ex.reps + 3,
+          rest: ex.rest.replace(/\d+/, (match) => String(Math.max(parseInt(match) - 15, 30)))
+        }))
+      }));
+    }
+    
+    // Adjust for muscle mass goal
+    if (userProfile.goal === "mass") {
+      workouts = workouts.map(workout => ({
+        ...workout,
+        exercises: workout.exercises.map(ex => ({
+          ...ex,
+          sets: ex.sets + 1,
+          reps: Math.max(ex.reps - 2, 6)
+        }))
+      }));
+    }
+
+    return workouts;
+  };
+
+  const workouts = generateWorkouts();
+  const getDifficulty = (): "Iniciante" | "Intermediário" | "Avançado" => {
+    if (!userProfile) return "Intermediário";
+    
+    switch (userProfile.level) {
+      case "beginner": return "Iniciante";
+      case "advanced": return "Avançado";
+      default: return "Intermediário";
+    }
+  };
+
+  const getCurrentWorkout = () => ({
+    ...workouts[currentWorkoutIndex],
+    difficulty: getDifficulty(),
+    duration: userProfile ? 
+      workoutTemplates[userProfile.level as keyof typeof workoutTemplates]?.duration || "45-60 min" 
+      : "45-60 min"
+  });
   
   const getNextWorkout = () => {
     const nextIndex = (currentWorkoutIndex + 1) % workouts.length;
     setCurrentWorkoutIndex(nextIndex);
-    return workouts[nextIndex];
+    return {
+      ...workouts[nextIndex],
+      difficulty: getDifficulty(),
+      duration: userProfile ? 
+        workoutTemplates[userProfile.level as keyof typeof workoutTemplates]?.duration || "45-60 min" 
+        : "45-60 min"
+    };
   };
 
   return {
-    workouts,
+    workouts: workouts.map(w => ({
+      ...w,
+      difficulty: getDifficulty(),
+      duration: userProfile ? 
+        workoutTemplates[userProfile.level as keyof typeof workoutTemplates]?.duration || "45-60 min" 
+        : "45-60 min"
+    })),
     getCurrentWorkout,
     getNextWorkout,
     currentWorkoutIndex

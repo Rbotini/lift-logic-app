@@ -23,15 +23,15 @@ const Index = () => {
   const renderActiveTab = () => {
     switch (activeTab) {
       case "home":
-        return <Home onStartWorkout={() => setActiveTab("workout")} />;
+        return <Home onStartWorkout={() => setActiveTab("workout")} userData={userData} />;
       case "workout":
-        return <Workout onBack={() => setActiveTab("home")} />;
+        return <Workout onBack={() => setActiveTab("home")} userData={userData} />;
       case "progress":
         return <Progress />;
       case "exercises":
         return <Exercises />;
       default:
-        return <Home onStartWorkout={() => setActiveTab("workout")} />;
+        return <Home onStartWorkout={() => setActiveTab("workout")} userData={userData} />;
     }
   };
 

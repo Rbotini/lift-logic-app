@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 interface WorkoutProps {
   onBack: () => void;
+  userData?: any;
 }
 
 interface ExerciseProgress {
@@ -16,8 +17,8 @@ interface ExerciseProgress {
   completed: boolean;
 }
 
-const Workout = ({ onBack }: WorkoutProps) => {
-  const { getCurrentWorkout } = useWorkoutData();
+const Workout = ({ onBack, userData }: WorkoutProps) => {
+  const { getCurrentWorkout } = useWorkoutData(userData);
   const { getExerciseImage } = useWgerExercises();
   const currentWorkout = getCurrentWorkout();
   
