@@ -4,9 +4,21 @@ import Home from "@/pages/Home";
 import Workout from "@/pages/Workout";
 import Progress from "@/pages/Progress";
 import Exercises from "@/pages/Exercises";
+import Setup from "@/pages/Setup";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("home");
+  const [isSetupComplete, setIsSetupComplete] = useState(false);
+  const [userData, setUserData] = useState(null);
+
+  const handleSetupComplete = (data: any) => {
+    setUserData(data);
+    setIsSetupComplete(true);
+  };
+
+  if (!isSetupComplete) {
+    return <Setup onComplete={handleSetupComplete} />;
+  }
 
   const renderActiveTab = () => {
     switch (activeTab) {
