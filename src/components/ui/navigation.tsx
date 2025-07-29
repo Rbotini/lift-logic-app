@@ -4,9 +4,11 @@ import { cn } from "@/lib/utils";
 interface NavigationProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
+  onSignOut?: () => void;
+  userName?: string;
 }
 
-const Navigation = ({ activeTab, onTabChange }: NavigationProps) => {
+const Navigation = ({ activeTab, onTabChange, onSignOut, userName }: NavigationProps) => {
   const tabs = [
     { id: "home", label: "Início", icon: Home },
     { id: "workout", label: "Treino", icon: Activity },

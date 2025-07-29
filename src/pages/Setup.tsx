@@ -6,7 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
-import { User, Target, Trophy, Heart, ArrowRight } from "lucide-react";
+import { User, Target, Trophy, Heart, ArrowRight, Calendar, Dumbbell } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface SetupFormData {
   name: string;
@@ -15,46 +17,45 @@ interface SetupFormData {
   weight: string;
   goal: string;
   level: string;
+  training_days: number;
   muscleGroups: string[];
 }
 
 interface SetupProps {
-  onComplete: (userData: SetupFormData) => void;
+  onComplete: () => void;
+  userId: string;
 }
 
-const Setup = ({ onComplete }: SetupProps) => {
+const Setup = ({ onComplete, userId }: SetupProps) => {
   const [currentStep, setCurrentStep] = useState(1);
   const { register, handleSubmit, setValue, watch } = useForm<SetupFormData>({
     defaultValues: {
       muscleGroups: []
     }
   });
+  const { toast } = useToast();
 
   const watchedValues = watch();
-  const totalSteps = 5;
+  const totalSteps = 6;
 
   const goals = [
-    { id: "mass", label: "Ganho de massa muscular", icon: "💪", description: "Foco no crescimento muscular" },
-    { id: "weight-loss", label: "Emagrecimento", icon: "🔥", description: "Queima de gordura e definição" },
-    { id: "conditioning", label: "Condicionamento físico", icon: "⚡", description: "Resistência e saúde geral" },
-    { id: "maintenance", label: "Manutenção", icon: "🎯", description: "Manter forma atual" }
+    { id: "hipertrofia", label: "Hipertrofia", icon: "💪", description: "Foco no crescimento muscular" },
+    { id: "emagrecimento", label: "Emagrecimento", icon: "🔥", description: "Queima de gordura e definição" },
+    { id: "condicionamento", label: "Condicionamento", icon: "⚡", description: "Resistência e saúde geral" }
   ];
 
   const levels = [
-    { id: "beginner", label: "Iniciante", description: "Ideal para quem está começando ou retornando após pausa" },
-    { id: "intermediate", label: "Intermediário", description: "Para quem já treina há algum tempo" },
-    { id: "advanced", label: "Avançado", description: "Foco total em performance e resultados" }
+    { id: "iniciante", label: "Iniciante", description: "Ideal para quem está começando ou retornando após pausa" },
+    { id: "intermediario", label: "Intermediário", description: "Para quem já treina há algum tempo" },
+    { id: "avancado", label: "Avançado", description: "Foco total em performance e resultados" }
   ];
 
   const muscleGroups = [
-    { id: "chest", label: "Peito", icon: "💪" },
-    { id: "back", label: "Costas", icon: "🏋️" },
-    { id: "legs", label: "Pernas", icon: "🦵" },
-    { id: "arms", label: "Braços", icon: "💪" },
-    { id: "core", label: "Core/Abdômen", icon: "🎯" },
-    { id: "functional", label: "Funcional", icon: "⚡" },
-    { id: "cardio", label: "Cardio", icon: "❤️" },
-    { id: "fullbody", label: "Fullbody", icon: "🏃" }
+    { id: "pernas", label: "Pernas", icon: "🦵" },
+    { id: "abdomen", label: "Abdômen", icon: "🎯" },
+    { id: "bracos", label: "Braços", icon: "💪" },
+    { id: "costas", label: "Costas", icon: "🏋️" },
+    { id: "funcional", label: "Funcional", icon: "⚡" }
   ];
 
   const handleMuscleGroupChange = (groupId: string, checked: boolean) => {
@@ -75,6 +76,8 @@ const Setup = ({ onComplete }: SetupProps) => {
       case 3:
         return watchedValues.level;
       case 4:
+        return watchedValues.training_days && watchedValues.training_days >= 2 && watchedValues.training_days <= 6;
+      case 5:
         return watchedValues.muscleGroups && watchedValues.muscleGroups.length > 0;
       default:
         return true;
@@ -93,8 +96,42 @@ const Setup = ({ onComplete }: SetupProps) => {
     }
   };
 
-  const onSubmit = (data: SetupFormData) => {
-    onComplete(data);
+  const onSubmit = async (data: SetupFormData) => {
+    try {
+      // Update profile with name
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ full_name: data.name })
+        .eq('user_id', userId);
+
+      if (profileError) throw profileError;
+
+      // Insert user preferences
+      const { error: preferencesError } = await supabase
+        .from('user_preferences')
+        .insert({
+          user_id: userId,
+          fitness_level: data.level,
+          goal: data.goal,
+          training_days: data.training_days,
+          preferred_muscle_groups: data.muscleGroups
+        });
+
+      if (preferencesError) throw preferencesError;
+
+      toast({
+        title: "Configuração concluída!",
+        description: "Seu plano de treino será gerado em breve",
+      });
+
+      onComplete();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao salvar preferências",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -239,16 +276,51 @@ const Setup = ({ onComplete }: SetupProps) => {
               </>
             )}
 
-            {/* Step 4: Preferências de grupos musculares */}
+            {/* Step 4: Frequência */}
             {currentStep === 4 && (
               <>
                 <CardHeader className="text-center">
                   <div className="mx-auto mb-4 p-3 bg-primary/10 rounded-full w-fit">
-                    <Heart className="h-8 w-8 text-primary" />
+                    <Calendar className="h-8 w-8 text-primary" />
                   </div>
-                  <CardTitle className="text-2xl">Seus favoritos</CardTitle>
+                  <CardTitle className="text-2xl">Frequência</CardTitle>
                   <CardDescription>
-                    Selecione os grupos musculares que mais te interessam
+                    Quantos dias por semana você pode treinar?
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="training_days" className="text-base">
+                      Escolha entre 2 e 6 dias por semana
+                    </Label>
+                    <Input
+                      id="training_days"
+                      type="number"
+                      min="2"
+                      max="6"
+                      placeholder="Entre 2 e 6 dias"
+                      {...register("training_days", { 
+                        required: true, 
+                        min: 2, 
+                        max: 6,
+                        valueAsNumber: true
+                      })}
+                    />
+                  </div>
+                </CardContent>
+              </>
+            )}
+
+            {/* Step 5: Preferências de grupos musculares */}
+            {currentStep === 5 && (
+              <>
+                <CardHeader className="text-center">
+                  <div className="mx-auto mb-4 p-3 bg-primary/10 rounded-full w-fit">
+                    <Dumbbell className="h-8 w-8 text-primary" />
+                  </div>
+                  <CardTitle className="text-2xl">Preferências</CardTitle>
+                  <CardDescription>
+                    Quais grupos musculares você prefere trabalhar?
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -271,8 +343,8 @@ const Setup = ({ onComplete }: SetupProps) => {
               </>
             )}
 
-            {/* Step 5: Confirmação */}
-            {currentStep === 5 && (
+            {/* Step 6: Confirmação */}
+            {currentStep === 6 && (
               <>
                 <CardHeader className="text-center">
                   <div className="mx-auto mb-4 p-3 bg-primary/10 rounded-full w-fit">
@@ -290,6 +362,7 @@ const Setup = ({ onComplete }: SetupProps) => {
                       <p><strong>Nome:</strong> {watchedValues.name}</p>
                       <p><strong>Objetivo:</strong> {goals.find(g => g.id === watchedValues.goal)?.label}</p>
                       <p><strong>Nível:</strong> {levels.find(l => l.id === watchedValues.level)?.label}</p>
+                      <p><strong>Frequência:</strong> {watchedValues.training_days} dias por semana</p>
                       <p><strong>Grupos favoritos:</strong> {watchedValues.muscleGroups?.length} selecionados</p>
                     </div>
                   </div>

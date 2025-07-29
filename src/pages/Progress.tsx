@@ -4,7 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const Progress = () => {
+interface ProgressProps {
+  user?: any;
+}
+
+const Progress = ({ user }: ProgressProps) => {
   const [currentWeight, setCurrentWeight] = useState("75.2");
   const [weightHistory] = useState([
     { date: "01/01", weight: 76.5 },
