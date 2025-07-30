@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { User, Target, Trophy, Heart, ArrowRight, Calendar, Dumbbell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useWorkoutManager } from "@/hooks/useWorkoutManager";
 
 interface SetupFormData {
   name: string;
@@ -34,6 +35,7 @@ const Setup = ({ onComplete, userId }: SetupProps) => {
     }
   });
   const { toast } = useToast();
+  const { generateWeeklyWorkouts } = useWorkoutManager({ id: userId });
 
   const watchedValues = watch();
   const totalSteps = 6;
@@ -119,9 +121,12 @@ const Setup = ({ onComplete, userId }: SetupProps) => {
 
       if (preferencesError) throw preferencesError;
 
+      // Generate weekly workouts based on training days
+      await generateWeeklyWorkouts(data.training_days);
+
       toast({
         title: "Configuração concluída!",
-        description: "Seu plano de treino será gerado em breve",
+        description: "Seus treinos personalizados foram gerados.",
       });
 
       onComplete();

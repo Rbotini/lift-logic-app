@@ -12,6 +12,7 @@ import Auth from "@/pages/Auth";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("home");
+  const [selectedWorkout, setSelectedWorkout] = useState<any>(null);
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isSetupComplete, setIsSetupComplete] = useState(false);
@@ -67,6 +68,11 @@ const Index = () => {
     });
   };
 
+  const startWorkout = (workout?: any) => {
+    setSelectedWorkout(workout);
+    setActiveTab("workout");
+  };
+
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
@@ -113,15 +119,15 @@ const Index = () => {
   const renderActiveTab = () => {
     switch (activeTab) {
       case "home":
-        return <Home onStartWorkout={() => setActiveTab("workout")} user={user} />;
+        return <Home onStartWorkout={startWorkout} user={user} />;
       case "workout":
-        return <Workout onBack={() => setActiveTab("home")} user={user} />;
+        return <Workout onBack={() => setActiveTab("home")} user={user} selectedWorkout={selectedWorkout} />;
       case "progress":
         return <Progress user={user} />;
       case "exercises":
         return <Exercises />;
       default:
-        return <Home onStartWorkout={() => setActiveTab("workout")} user={user} />;
+        return <Home onStartWorkout={startWorkout} user={user} />;
     }
   };
 

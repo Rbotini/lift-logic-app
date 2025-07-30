@@ -1,18 +1,20 @@
 import { useState } from "react";
-import { Calendar, User, Flame } from "lucide-react";
+import { Calendar, User, Flame, CheckCircle2 } from "lucide-react";
 import WorkoutCard from "@/components/WorkoutCard";
-import { useWorkoutData } from "@/hooks/useWgerApi";
+import { useWorkoutManager } from "@/hooks/useWorkoutManager";
 
 interface HomeProps {
-  onStartWorkout: () => void;
+  onStartWorkout: (workout?: any) => void;
   user?: any;
 }
 
 const Home = ({ onStartWorkout, user }: HomeProps) => {
-  const { getCurrentWorkout } = useWorkoutData(user);
+  const { weeklyWorkouts, loading, getTodayWorkout, getLastCompletedWorkout } = useWorkoutManager(user);
   const [userName] = useState(user?.user_metadata?.full_name || user?.email || "Usuário");
   
-  const currentWorkout = getCurrentWorkout();
+  const todayWorkout = getTodayWorkout();
+  const lastCompletedWorkout = getLastCompletedWorkout();
+  const completedCount = weeklyWorkouts.filter(w => w.is_completed).length;
   const today = new Date().toLocaleDateString('pt-BR', {
     weekday: 'long',
     day: 'numeric',
@@ -45,8 +47,8 @@ const Home = ({ onStartWorkout, user }: HomeProps) => {
                 <Flame className="text-secondary-foreground" size={20} />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">7</p>
-                <p className="text-xs text-muted-foreground">Dias seguidos</p>
+                <p className="text-2xl font-bold text-foreground">{completedCount}</p>
+                <p className="text-xs text-muted-foreground">Treinos concluídos</p>
               </div>
             </div>
           </div>
@@ -57,8 +59,8 @@ const Home = ({ onStartWorkout, user }: HomeProps) => {
                 <Calendar className="text-accent-foreground" size={20} />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">24</p>
-                <p className="text-xs text-muted-foreground">Treinos feitos</p>
+                <p className="text-2xl font-bold text-foreground">{weeklyWorkouts.length}</p>
+                <p className="text-xs text-muted-foreground">Treinos da semana</p>
               </div>
             </div>
           </div>
@@ -67,17 +69,34 @@ const Home = ({ onStartWorkout, user }: HomeProps) => {
         {/* Today's Workout */}
         <div className="mb-8">
           <h2 className="text-xl font-semibold text-foreground mb-4">
-            Treino de Hoje
+            Treinos da Semana
           </h2>
           
-          <WorkoutCard
-            title={currentWorkout.title}
-            exercises={currentWorkout.exercises.length}
-            duration={currentWorkout.duration}
-            difficulty={currentWorkout.difficulty}
-            onStart={onStartWorkout}
-            className="animate-pulse-glow"
-          />
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <p className="text-muted-foreground mt-2">Carregando treinos...</p>
+            </div>
+          ) : weeklyWorkouts.length === 0 ? (
+            <div className="bg-card border border-border rounded-xl p-6 text-center">
+              <p className="text-foreground mb-2">Nenhum treino encontrado</p>
+              <p className="text-sm text-muted-foreground">Complete seu perfil para gerar treinos personalizados</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {weeklyWorkouts.map((workout) => (
+                <WorkoutCard
+                  key={workout.id}
+                  title={workout.is_completed ? `✅ ${workout.day_name} - Concluído` : `${workout.day_name} - ${workout.exercises.length} exercícios`}
+                  exercises={workout.exercises.length}
+                  duration="45-60 min"
+                  difficulty="Intermediário"
+                  onStart={() => onStartWorkout(workout)}
+                  className={workout.is_completed ? "opacity-75" : todayWorkout?.id === workout.id ? "animate-pulse-glow" : ""}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Quick Actions */}
@@ -89,7 +108,12 @@ const Home = ({ onStartWorkout, user }: HomeProps) => {
           <div className="grid grid-cols-2 gap-3">
             <button className="bg-card border border-border p-4 rounded-xl text-left hover:bg-muted/50 transition-colors">
               <p className="font-medium text-foreground">Último Treino</p>
-              <p className="text-sm text-muted-foreground">Ontem • Pernas</p>
+              <p className="text-sm text-muted-foreground">
+                {lastCompletedWorkout 
+                  ? `${lastCompletedWorkout.day_name} • ${new Date(lastCompletedWorkout.completed_at || '').toLocaleDateString('pt-BR')}`
+                  : 'Nenhum treino concluído'
+                }
+              </p>
             </button>
             
             <button className="bg-card border border-border p-4 rounded-xl text-left hover:bg-muted/50 transition-colors">
