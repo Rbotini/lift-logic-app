@@ -159,9 +159,25 @@ export const useWorkoutManager = (user: any) => {
 
   const generateWeeklyWorkouts = async (trainingDays: number) => {
     try {
-      const template = workoutTemplates[trainingDays as keyof typeof workoutTemplates] || workoutTemplates[3];
+      // Primeiro, verifica se já existem treinos para esta semana
       const startOfWeek = new Date();
       startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay() + 1); // Monday
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(endOfWeek.getDate() + 6);
+
+      const { data: existingWorkouts } = await supabase
+        .from('workout_sessions')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('session_date', startOfWeek.toISOString().split('T')[0])
+        .lte('session_date', endOfWeek.toISOString().split('T')[0]);
+
+      if (existingWorkouts && existingWorkouts.length > 0) {
+        setWeeklyWorkouts(existingWorkouts as unknown as WorkoutSession[] || []);
+        return existingWorkouts;
+      }
+
+      const template = workoutTemplates[trainingDays as keyof typeof workoutTemplates] || workoutTemplates[3];
 
       const workoutData = template.map((workout, index) => ({
         user_id: user.id,
