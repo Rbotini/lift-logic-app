@@ -192,11 +192,33 @@ export const useWorkoutManager = (user: any) => {
       }
 
       console.log('Criando novos treinos para', trainingDays, 'dias');
+      
+      // Primeiro, criar um plano de treino
+      const { data: workoutPlan, error: planError } = await supabase
+        .from('workout_plans')
+        .insert({
+          user_id: user.id,
+          week_start_date: startOfWeek.toISOString().split('T')[0],
+          plan_data: {
+            training_days: trainingDays,
+            created_at: new Date().toISOString()
+          }
+        })
+        .select()
+        .single();
+
+      if (planError) {
+        console.error('Erro ao criar plano de treino:', planError);
+        throw planError;
+      }
+
+      console.log('Plano de treino criado:', workoutPlan);
+
       const template = workoutTemplates[trainingDays as keyof typeof workoutTemplates] || workoutTemplates[3];
 
       const workoutData = template.map((workout, index) => ({
         user_id: user.id,
-        workout_plan_id: "00000000-0000-0000-0000-000000000000", // Temporary UUID
+        workout_plan_id: workoutPlan.id,
         day_name: workout.day,
         session_date: new Date(startOfWeek.getTime() + index * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         exercises: workout.exercises as any,
@@ -220,6 +242,7 @@ export const useWorkoutManager = (user: any) => {
       setWeeklyWorkouts(data as unknown as WorkoutSession[] || []);
       return data;
     } catch (error: any) {
+      console.error('Erro completo na geração de treinos:', error);
       toast({
         title: "Erro ao gerar treinos",
         description: error.message,
