@@ -159,24 +159,39 @@ export const useWorkoutManager = (user: any) => {
 
   const generateWeeklyWorkouts = async (trainingDays: number) => {
     try {
+      console.log('Iniciando geração de treinos para:', { userId: user.id, trainingDays });
+      
       // Primeiro, verifica se já existem treinos para esta semana
       const startOfWeek = new Date();
       startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay() + 1); // Monday
       const endOfWeek = new Date(startOfWeek);
       endOfWeek.setDate(endOfWeek.getDate() + 6);
 
-      const { data: existingWorkouts } = await supabase
+      console.log('Período da semana:', { 
+        startOfWeek: startOfWeek.toISOString().split('T')[0], 
+        endOfWeek: endOfWeek.toISOString().split('T')[0] 
+      });
+
+      const { data: existingWorkouts, error: queryError } = await supabase
         .from('workout_sessions')
         .select('*')
         .eq('user_id', user.id)
         .gte('session_date', startOfWeek.toISOString().split('T')[0])
         .lte('session_date', endOfWeek.toISOString().split('T')[0]);
 
+      if (queryError) {
+        console.error('Erro ao consultar treinos existentes:', queryError);
+      }
+
+      console.log('Treinos existentes encontrados:', existingWorkouts?.length || 0);
+
       if (existingWorkouts && existingWorkouts.length > 0) {
+        console.log('Usando treinos existentes');
         setWeeklyWorkouts(existingWorkouts as unknown as WorkoutSession[] || []);
         return existingWorkouts;
       }
 
+      console.log('Criando novos treinos para', trainingDays, 'dias');
       const template = workoutTemplates[trainingDays as keyof typeof workoutTemplates] || workoutTemplates[3];
 
       const workoutData = template.map((workout, index) => ({
@@ -188,12 +203,19 @@ export const useWorkoutManager = (user: any) => {
         is_completed: false
       }));
 
+      console.log('Dados dos treinos a serem inseridos:', workoutData);
+
       const { data, error } = await supabase
         .from('workout_sessions')
         .insert(workoutData)
         .select();
 
-      if (error) throw error;
+      console.log('Resposta da inserção:', { data, error });
+
+      if (error) {
+        console.error('Erro ao inserir treinos:', error);
+        throw error;
+      }
 
       setWeeklyWorkouts(data as unknown as WorkoutSession[] || []);
       return data;

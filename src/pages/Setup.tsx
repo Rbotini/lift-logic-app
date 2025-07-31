@@ -100,13 +100,18 @@ const Setup = ({ onComplete, userId }: SetupProps) => {
 
   const onSubmit = async (data: SetupFormData) => {
     try {
+      console.log('Setup form submitted:', { userId, data });
+      
       // Update profile with name
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ full_name: data.name })
         .eq('user_id', userId);
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Erro ao atualizar perfil:', profileError);
+        throw profileError;
+      }
 
       // Insert user preferences
       const { error: preferencesError } = await supabase
@@ -119,10 +124,17 @@ const Setup = ({ onComplete, userId }: SetupProps) => {
           preferred_muscle_groups: data.muscleGroups
         });
 
-      if (preferencesError) throw preferencesError;
+      if (preferencesError) {
+        console.error('Erro ao inserir preferências:', preferencesError);
+        throw preferencesError;
+      }
 
+      console.log('Chamando generateWeeklyWorkouts com:', data.training_days);
+      
       // Generate weekly workouts based on training days
-      await generateWeeklyWorkouts(data.training_days);
+      const workoutsResult = await generateWeeklyWorkouts(data.training_days);
+      
+      console.log('Resultado da geração de treinos:', workoutsResult);
 
       toast({
         title: "Configuração concluída!",
