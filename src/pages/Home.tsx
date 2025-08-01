@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Calendar, User, Flame, CheckCircle2 } from "lucide-react";
+import { Calendar, User, Flame, CheckCircle2, Sparkles } from "lucide-react";
 import WorkoutCard from "@/components/WorkoutCard";
+import { Button } from "@/components/ui/button";
 import { useWorkoutManager } from "@/hooks/useWorkoutManager";
 
 interface HomeProps {
@@ -9,7 +10,8 @@ interface HomeProps {
 }
 
 const Home = ({ onStartWorkout, user }: HomeProps) => {
-  const { weeklyWorkouts, loading, getTodayWorkout, getLastCompletedWorkout } = useWorkoutManager(user);
+  const { weeklyWorkouts, loading, getTodayWorkout, getLastCompletedWorkout, generateNewWorkouts } = useWorkoutManager(user);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [userName] = useState(user?.user_metadata?.full_name || user?.email || "Usuário");
   
   const todayWorkout = getTodayWorkout();
@@ -20,6 +22,15 @@ const Home = ({ onStartWorkout, user }: HomeProps) => {
     day: 'numeric',
     month: 'long'
   });
+
+  const handleGenerateNewWorkouts = async () => {
+    setIsGenerating(true);
+    try {
+      await generateNewWorkouts();
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-hero pt-6 pb-20">
@@ -97,6 +108,18 @@ const Home = ({ onStartWorkout, user }: HomeProps) => {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Generate New Workouts Button */}
+        <div className="mb-6">
+          <Button
+            onClick={handleGenerateNewWorkouts}
+            disabled={isGenerating}
+            className="w-full bg-gradient-primary hover:bg-gradient-primary/90 text-primary-foreground font-semibold py-4 rounded-xl flex items-center justify-center gap-2"
+          >
+            <Sparkles className={`h-5 w-5 ${isGenerating ? 'animate-spin' : ''}`} />
+            {isGenerating ? 'Gerando Treinos com IA...' : 'Gerar Novos Treinos com IA'}
+          </Button>
         </div>
 
         {/* Quick Actions */}

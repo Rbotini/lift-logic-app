@@ -35,7 +35,7 @@ const Setup = ({ onComplete, userId }: SetupProps) => {
     }
   });
   const { toast } = useToast();
-  const { generateWeeklyWorkouts } = useWorkoutManager({ id: userId });
+  const { generateWeeklyWorkoutsWithAI } = useWorkoutManager({ id: userId });
 
   const watchedValues = watch();
   const totalSteps = 6;
@@ -129,12 +129,17 @@ const Setup = ({ onComplete, userId }: SetupProps) => {
         throw preferencesError;
       }
 
-      console.log('Chamando generateWeeklyWorkouts com:', data.training_days);
+      console.log('Gerando treinos com IA...');
       
-      // Generate weekly workouts based on training days
-      const workoutsResult = await generateWeeklyWorkouts(data.training_days);
+      // Gerar treinos da semana usando IA
+      const workoutsResult = await generateWeeklyWorkoutsWithAI(data, {
+        fitness_level: data.level,
+        goal: data.goal,
+        training_days: data.training_days,
+        preferred_muscle_groups: data.muscleGroups
+      });
       
-      console.log('Resultado da geração de treinos:', workoutsResult);
+      console.log('Resultado da geração de treinos com IA:', workoutsResult);
 
       toast({
         title: "Configuração concluída!",

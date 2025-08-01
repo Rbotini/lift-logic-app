@@ -157,6 +157,155 @@ export const useWorkoutManager = (user: any) => {
     ]
   };
 
+  const generateWeeklyWorkoutsWithAI = async (userProfile: any, userPreferences: any): Promise<WorkoutSession[] | null> => {
+    if (!user?.id) return null;
+
+    try {
+      console.log('Gerando treinos com IA...');
+      
+      // Chamar a edge function para gerar treino com IA
+      const { data: aiResponse, error: aiError } = await supabase.functions.invoke('generate-workout-ai', {
+        body: { userProfile, userPreferences }
+      });
+
+      if (aiError) {
+        console.error('Erro na IA:', aiError);
+        throw new Error('Erro ao gerar treino com IA: ' + aiError.message);
+      }
+
+      if (!aiResponse.success) {
+        throw new Error(aiResponse.error || 'Erro desconhecido na IA');
+      }
+
+      const aiWorkouts = aiResponse.workoutPlan;
+      console.log('Treinos gerados pela IA:', aiWorkouts);
+
+      // Criar plano de treino no banco
+      const startOfWeek = new Date();
+      startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+
+      const { data: workoutPlan, error: planError } = await supabase
+        .from('workout_plans')
+        .insert({
+          user_id: user.id,
+          week_start_date: startOfWeek.toISOString().split('T')[0],
+          plan_data: {
+            training_days: userPreferences.training_days,
+            generated_with_ai: true,
+            created_at: new Date().toISOString()
+          }
+        })
+        .select()
+        .single();
+
+      if (planError) {
+        console.error('Erro ao criar plano de treino:', planError);
+        throw planError;
+      }
+
+      // Converter workouts da IA para formato do banco
+      const workoutData = aiWorkouts.map((workout: any, index: number) => ({
+        user_id: user.id,
+        workout_plan_id: workoutPlan.id,
+        day_name: workout.day,
+        session_date: new Date(startOfWeek.getTime() + index * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        exercises: workout.exercises,
+        is_completed: false
+      }));
+
+      console.log('Inserindo sessões de treino:', workoutData);
+
+      const { data, error } = await supabase
+        .from('workout_sessions')
+        .insert(workoutData)
+        .select();
+
+      if (error) {
+        console.error('Erro ao salvar treinos:', error);
+        throw error;
+      }
+
+      console.log('Treinos salvos com sucesso:', data);
+      
+      toast({
+        title: "Treinos gerados com IA!",
+        description: "Seus treinos personalizados foram criados com sucesso.",
+      });
+
+      setWeeklyWorkouts(data as unknown as WorkoutSession[] || []);
+      return data as unknown as WorkoutSession[];
+    } catch (error: any) {
+      console.error('Erro completo na geração de treinos com IA:', error);
+      toast({
+        title: "Erro ao gerar treinos",
+        description: error.message,
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
+
+  const generateNewWorkouts = async (): Promise<WorkoutSession[] | null> => {
+    if (!user?.id) return null;
+
+    try {
+      // Buscar preferências do usuário
+      const { data: preferences, error: prefError } = await supabase
+        .from('user_preferences')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (prefError || !preferences) {
+        toast({
+          title: "Erro",
+          description: "Preferências do usuário não encontradas. Refaça o cadastro.",
+          variant: "destructive",
+        });
+        return null;
+      }
+
+      // Buscar perfil do usuário
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileError || !profile) {
+        toast({
+          title: "Erro",
+          description: "Perfil do usuário não encontrado.",
+          variant: "destructive",
+        });
+        return null;
+      }
+
+      // Deletar treinos da semana atual primeiro
+      const startOfWeek = new Date();
+      startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(endOfWeek.getDate() + 6);
+
+      await supabase
+        .from('workout_sessions')
+        .delete()
+        .eq('user_id', user.id)
+        .gte('session_date', startOfWeek.toISOString().split('T')[0])
+        .lte('session_date', endOfWeek.toISOString().split('T')[0]);
+
+      // Gerar novos treinos com IA
+      return await generateWeeklyWorkoutsWithAI(profile, preferences);
+    } catch (error: any) {
+      toast({
+        title: "Erro ao gerar novos treinos",
+        description: error.message,
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
+
   const generateWeeklyWorkouts = async (trainingDays: number) => {
     try {
       console.log('Iniciando geração de treinos para:', { userId: user.id, trainingDays });
@@ -335,6 +484,8 @@ export const useWorkoutManager = (user: any) => {
     weeklyWorkouts,
     loading,
     generateWeeklyWorkouts,
+    generateWeeklyWorkoutsWithAI,
+    generateNewWorkouts,
     loadWeeklyWorkouts,
     completeWorkout,
     getLastCompletedWorkout,
