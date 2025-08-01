@@ -281,18 +281,25 @@ export const useWorkoutManager = (user: any) => {
         return null;
       }
 
-      // Deletar treinos da semana atual primeiro
-      const startOfWeek = new Date();
-      startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(endOfWeek.getDate() + 6);
-
-      await supabase
+      // Deletar TODOS os treinos existentes do usuário primeiro
+      const { error: deleteError } = await supabase
         .from('workout_sessions')
         .delete()
-        .eq('user_id', user.id)
-        .gte('session_date', startOfWeek.toISOString().split('T')[0])
-        .lte('session_date', endOfWeek.toISOString().split('T')[0]);
+        .eq('user_id', user.id);
+
+      if (deleteError) {
+        console.error('Erro ao deletar treinos existentes:', deleteError);
+      }
+
+      // Deletar planos de treino existentes também
+      const { error: deletePlanError } = await supabase
+        .from('workout_plans')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (deletePlanError) {
+        console.error('Erro ao deletar planos existentes:', deletePlanError);
+      }
 
       // Gerar novos treinos com IA
       return await generateWeeklyWorkoutsWithAI(profile, preferences);

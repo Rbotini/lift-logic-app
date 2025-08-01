@@ -33,23 +33,37 @@ serve(async (req) => {
     5. Tenho acesso a academia completa
     6. Idade: ${userProfile.age || 'Não informado'} anos, Peso: ${userProfile.weight || 'Não informado'} kg
 
-    IMPORTANTE: Retorne APENAS um JSON válido com a seguinte estrutura:
+    IMPORTANTE: 
+    - Retorne APENAS um JSON válido com a seguinte estrutura
+    - TODOS os nomes de exercícios devem estar em PORTUGUÊS BRASILEIRO
+    - Use nomes tradicionais brasileiros para os exercícios
+    
     {
       "workouts": [
         {
           "day": "Segunda-feira",
           "exercises": [
             {
-              "name": "Nome do exercício",
+              "name": "Nome do exercício em português",
               "sets": 3,
               "reps": "12-15",
               "rest": 60,
-              "instructions": "Instruções detalhadas"
+              "instructions": "Instruções detalhadas em português"
             }
           ]
         }
       ]
     }
+
+    Exemplos de nomes corretos em português:
+    - Supino Reto (não Bench Press)
+    - Agachamento (não Squats)
+    - Remada Curvada (não Bent Over Rows)
+    - Rosca Direta (não Bicep Curls)
+    - Desenvolvimento (não Shoulder Press)
+    - Leg Press (este pode ficar)
+    - Stiff (este pode ficar)
+    - Prancha (não Plank)
 
     Crie exatamente ${userPreferences.training_days} treinos diferentes, um para cada dia da semana que treina.
     `;
